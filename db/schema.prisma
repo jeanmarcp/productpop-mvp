@@ -1,0 +1,48 @@
+// Prisma schema for ProductPop MVP v1
+// Engineer's Next.js app should `prisma generate` after `npm i @prisma/client`.
+// DATABASE_URL goes in .env (see .env.example).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Waitlist {
+  id        BigInt   @id @default(autoincrement())
+  email     String   @unique
+  source    String   @default("unknown")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([createdAt(sort: Desc)])
+  @@index([source])
+  @@map("waitlist")
+}
+
+model Edit {
+  id        BigInt   @id @default(autoincrement())
+  email     String?
+  inputUrl  String   @map("input_url")
+  outputUrl String   @map("output_url")
+  source    String   @default("upload")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([email])
+  @@index([createdAt(sort: Desc)])
+  @@map("edits")
+}
+
+model Event {
+  id        BigInt   @id @default(autoincrement())
+  kind      String
+  email     String?
+  payload   Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([kind])
+  @@index([createdAt(sort: Desc)])
+  @@map("events")
+}
