@@ -3,7 +3,19 @@
 // Hand-edited to TS for direct import. Pricing/CTA strings are typed as
 // `string` to keep the drop-in shape stable.
 
-export const landing = {
+type Feature = { title: string; body: string; bullets?: string[] };
+type PricingTier = { id: string; name: string; price: string; period: string; highlight?: boolean; badge?: string; features: string[] };
+type LandingShape = {
+  hero: { headline: string; subhead: string; primaryCta: { label: string; href: string }; secondaryCta: { label: string; href: string }; valuePoints: string[]; socialProof: string };
+  features: Feature[];
+  howItWorks: { step: number; title: string; body: string }[];
+  pricing: { tiers: PricingTier[]; creditPackages: { photos: number; price: string }[] };
+  testimonials: { name: string; role: string; quote: string }[];
+  faq: { q: string; a: string }[];
+  about: { mission: string; story: string; promise: string };
+  contact: { email: string; support: string; twitter: string; instagram: string };
+};
+export const landing: LandingShape = {
   hero: {
     headline: "One-Tap Product Photo Enhancement",
     subhead:
@@ -93,6 +105,22 @@ export const landing = {
           "Priority support",
         ],
       },
+      {
+        id: "credits",
+        name: "Credit Packs",
+        price: "From €4.99",
+        period: "/pack",
+        highlight: false,
+        badge: "Pay-as-you-go",
+        features: [
+          "50 photos — €4.99",
+          "100 photos — €8.99",
+          "500 photos — €34.99",
+          "No subscription, no expiry",
+          "Use on any plan or solo",
+          "Ideal for casual sellers",
+        ],
+      },
     ],
     creditPackages: [
       { photos: 50, price: "€4.99" },
@@ -167,7 +195,7 @@ export const landing = {
     twitter: "@ProductPop",
     instagram: "@productpop",
   },
-} as const;
+};
 
 export type Landing = typeof landing;
 export default landing;

@@ -8,7 +8,7 @@
 //     invocations. `globalThis` cache prevents the connection count from
 //     blowing up on cold starts.
 
-import { Pool, type PoolClient } from "pg";
+import { Pool, type PoolClient, type QueryResultRow } from "pg";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -33,11 +33,15 @@ function pool(): Pool {
   return globalThis.__productpop_pg_pool__;
 }
 
-export async function query<T = unknown>(
+export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params: unknown[] = []
 ): Promise<{ rows: T[]; rowCount: number }> {
-  return pool().query<T>(text, params as never);
+  // Cast through `any` because pg's overloaded query<R, I> generics
+  // don't always flow T through the constraint cleanly. The runtime
+  // behaviour is identical — `pg` forwards `values` straight to libpq.
+  const result = await (pool().query as any)(text, params);
+  return { rows: result.rows as T[], rowCount: result.rowCount ?? 0 };
 }
 
 export async function withClient<T>(
