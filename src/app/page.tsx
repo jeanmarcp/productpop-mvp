@@ -1,9 +1,11 @@
 // ProductPop MVP v1 — landing + try-it-now.
-// Server-rendered shell + a single client island (TryItUploader).
+// Server-rendered shell + a few client islands (TryItUploader, HeroCtas
+// which owns the waitlist modal, and WaitlistForm inside that modal).
 // Content is driven by /content/landing.ts (from CMO PRO-81 hand-off).
 
 import landing from "@/content/landing";
 import TryItUploader from "@/components/TryItUploader";
+import HeroCtas from "./_components/HeroCtas";
 import { Card, Eyebrow, H1, H2, Lead, Section } from "@/components/ui";
 
 export default function Home() {
@@ -30,6 +32,10 @@ export default function Home() {
                 </li>
               ))}
             </ul>
+            <HeroCtas
+              primaryCta={hero.primaryCta}
+              secondaryCta={hero.secondaryCta}
+            />
             <p className="mt-6 text-sm text-zinc-500">{hero.socialProof}</p>
           </div>
           <div id="try">
@@ -57,11 +63,11 @@ export default function Home() {
         </ol>
       </Section>
 
-      {/* FEATURES */}
-      <Section>
+      {/* FEATURES — 3-up at lg, 2-up at sm, 1-up at base */}
+      <Section id="features">
         <Eyebrow>Features</Eyebrow>
         <H2>Built for sellers, not designers.</H2>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => (
             <Card key={f.title}>
               <h3 className="text-lg font-semibold text-zinc-900">{f.title}</h3>
@@ -81,11 +87,11 @@ export default function Home() {
         </div>
       </Section>
 
-      {/* PRICING */}
+      {/* PRICING — 3 tiers */}
       <Section id="pricing" className="bg-white border-y border-zinc-200">
         <Eyebrow>Pricing</Eyebrow>
         <H2>Start free, upgrade when you ship more.</H2>
-        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {pricing.tiers.map((t) => (
             <Card
               key={t.id}
@@ -200,14 +206,30 @@ export default function Home() {
         </div>
       </Section>
 
+      {/* FOOTER with terms / privacy / cookies placeholders */}
       <footer className="border-t border-zinc-200 bg-white">
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-2 px-5 py-6 sm:flex-row sm:items-center">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-4 px-5 py-6 sm:flex-row sm:items-center">
           <p className="text-sm text-zinc-500">
             © {new Date().getFullYear()} ProductPop · MVP v1
           </p>
-          <p className="text-xs text-zinc-400">
-            Built fast, shipped honest. v0.1.
-          </p>
+          <nav aria-label="Legal" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-zinc-500">
+            <a className="hover:text-zinc-700 hover:underline" href="/legal/terms">
+              Terms of Service
+            </a>
+            <a className="hover:text-zinc-700 hover:underline" href="/legal/privacy">
+              Privacy Policy
+            </a>
+            <a className="hover:text-zinc-700 hover:underline" href="/legal/cookies">
+              Cookie Policy
+            </a>
+            <a className="hover:text-zinc-700 hover:underline" href="/legal/refunds">
+              Refunds
+            </a>
+            <span className="text-zinc-300">·</span>
+            <a className="hover:text-zinc-700 hover:underline" href={`mailto:${contact.support}`}>
+              {contact.support}
+            </a>
+          </nav>
         </div>
       </footer>
     </main>
