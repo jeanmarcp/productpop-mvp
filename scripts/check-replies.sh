@@ -45,6 +45,23 @@ SYSTEMD_USER_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 
 mkdir -p "$TEXT_DIR" "$LOG_DIR" "$SYSTEMD_USER_DIR"
 
+# Cron runs with a stripped PATH (/usr/bin:/bin) that lacks himalaya.
+# Self-fix: prepend the standard user bin locations so this script works
+# whether invoked by cron, by hand, or by a subagent with default env.
+HIMALAYA_PATHS="/home/paperclip/.local/bin /home/paperclip/.local/share/hermes-agent/venv/bin /usr/local/bin"
+for p in $HIMALAYA_PATHS; do
+  if [ -x "$p/himalaya" ] && ! echo ":$PATH:" | grep -q ":$p:"; then
+    export PATH="$p:$PATH"
+  fi
+done
+# Same idea for python3 on hosts that ship it in user locations.
+for p in $HIMALAYA_PATHS; do
+  if [ -x "$p/python3" ] && ! command -v python3 >/dev/null 2>&1; then
+    export PATH="$p:$PATH"
+    break
+  fi
+done
+
 PAPERCLIP_API_URL="${PAPERCLIP_API_URL:-http://192.168.8.146:3100/api}"
 PRO_90_ID="ce94d2fb-0eac-46ac-b38b-35f7d0595882"
 
@@ -208,7 +225,7 @@ EOF
     body=$(jq -n --arg body "$COMMENT" '{body:$body}')
     if curl -fsS -X POST \
         "$PAPERCLIP_API_URL/issues/$PRO_90_ID/comments" \
-        -H "Authorization: Bearer $PAPERCLIP_API_KEY" \
+        -H "Authorization: Bearer ${PAPERCLIP_API_KEY}" \
         -H "X-Paperclip-Run-Id: ${PAPERCLIP_RUN_ID:-check-replies}" \
         -H "Content-Type: application/json" \
         --data-binary "$body" >/dev/null 2>>"$LOG_DIR/api.err"; then

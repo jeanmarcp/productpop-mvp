@@ -9,11 +9,29 @@
 // Requires DATABASE_URL.
 
 import { readdir, readFile } from "node:fs/promises";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import pg from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const PROJECT_ROOT = join(__dirname, "..");
+
+// Load .env.local first (Next.js convention), then .env, so DATABASE_URL
+// is set without requiring the caller to export it. We avoid dotenv deps
+// to keep the script standalone.
+function loadEnvFile(path) {
+  if (!existsSync(path)) return;
+  const text = readFileSync(path, "utf8");
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^([A-Z0-9_]+)=(.*)$/);
+    if (!m) continue;
+    if (process.env[m[1]] !== undefined) continue;
+    process.env[m[1]] = m[2];
+  }
+}
+loadEnvFile(join(PROJECT_ROOT, ".env.local"));
+loadEnvFile(join(PROJECT_ROOT, ".env"));
 const DB_DIR = __dirname;
 
 async function main() {
@@ -34,8 +52,10 @@ async function main() {
       )
     `);
 
+    // Skip seed.sql — it's invoked explicitly by db/seed.sh, not on every
+    // migrate run. (Idempotent, but adds noise to migration history.)
     const files = (await readdir(DB_DIR))
-      .filter((f) => f.endsWith(".sql"))
+      .filter((f) => f.endsWith(".sql") && f !== "seed.sql" && f !== "schema.prisma")
       .sort();
 
     for (const file of files) {

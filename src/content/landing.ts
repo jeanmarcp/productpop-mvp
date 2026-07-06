@@ -10,7 +10,29 @@ type LandingShape = {
   features: Feature[];
   howItWorks: { step: number; title: string; body: string }[];
   pricing: { tiers: PricingTier[]; creditPackages: { photos: number; price: string }[] };
-  testimonials: { name: string; role: string; quote: string }[];
+  testimonials: {
+    id: string;
+    kind: "real" | "pending";
+    quote: string;
+    name: string;
+    business: string;
+    avatarUrl?: string;
+  }[];
+  /**
+   * When true, the Testimonials block renders the Option-D branch
+   * (founder quote + 2 product screenshots) instead of the 2-slot
+   * testimonial grid. ONE toggle. Set by the board when the outreach
+   * campaign does not land by 2026-07-09.
+   */
+  useOptionD: boolean;
+  founderQuote: { quote: string; name: string; role: string; avatarUrl?: string };
+  productScreenshots: {
+    id: string;
+    caption: string;
+    imageUrl?: string;
+    alt: string;
+  }[];
+  addYourStoryEmail: string;
   faq: { q: string; a: string }[];
   about: { mission: string; story: string; promise: string };
   contact: { email: string; support: string; twitter: string; instagram: string };
@@ -128,26 +150,48 @@ export const landing: LandingShape = {
       { photos: 500, price: "€34.99" },
     ],
   },
+  // V2-D2 (VOIA-51 / PRO-98). Two pending slots + Add-your-story CTA.
+  // When a real seller reply lands, replace a pending entry with
+  //   { id, kind: "real", quote, name, business, avatarUrl? }.
+  // The next deploy will pick it up automatically — no manual swap.
   testimonials: [
     {
-      name: "Sarah M.",
-      role: "Vinted Seller",
+      id: "01-pending-written",
+      kind: "pending",
       quote:
-        "Sold my vintage dress 3 days faster after using ProductPop. The photos look professional and my listing got way more views!",
+        "We&rsquo;re collecting the first round of real seller replies now. The honest version of this card is &lsquo;pending&rsquo; until a real person replies.",
+      name: "",
+      business: "",
     },
     {
-      name: "James K.",
-      role: "Etsy Shop Owner",
+      id: "02-pending-written",
+      kind: "pending",
       quote:
-        "ProductPop saved me hours of editing. My shop sales increased 40% in the first month.",
-    },
-    {
-      name: "Emma L.",
-      role: "Shopify Merchant",
-      quote:
-        "As a small business owner, I couldn't afford a studio. ProductPop gave me studio-quality photos for a fraction of the cost.",
+        "One short quote from a real Vinted or Etsy seller, written in their own words. No marketing polish, no invented numbers — just one seller telling another what changed.",
+      name: "",
+      business: "",
     },
   ],
+  useOptionD: false,
+  founderQuote: {
+    quote:
+      "We built ProductPop because we wanted our own listings to look as good as the big shops — without paying a studio. The first round of seller replies will land in a few days, and we&rsquo;d rather show &lsquo;pending&rsquo; than a fake name until they do.",
+    name: "Jean-Marc Pédron",
+    role: "Founder, ProductPop",
+  },
+  productScreenshots: [
+    {
+      id: "screenshot-before-after",
+      caption: "Before / after: tap to remove the background.",
+      alt: "ProductPop before and after background removal",
+    },
+    {
+      id: "screenshot-template-picker",
+      caption: "Pick a studio template — Wood, White, Gradient, or your own.",
+      alt: "ProductPop studio template picker",
+    },
+  ],
+  addYourStoryEmail: "jeanmarc.pedron@gmail.com",
   faq: [
     {
       q: "How does the background removal work?",

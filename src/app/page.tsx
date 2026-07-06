@@ -6,11 +6,24 @@
 import landing from "@/content/landing";
 import TryItUploader from "@/components/TryItUploader";
 import HeroCtas from "./_components/HeroCtas";
+import { TestimonialsBlock } from "@/components/TestimonialsBlock";
 import { Card, Eyebrow, H1, H2, Lead, Section } from "@/components/ui";
 
 export default function Home() {
-  const { hero, features, howItWorks, pricing, testimonials, faq, about, contact } =
-    landing;
+  const {
+    hero,
+    features,
+    howItWorks,
+    pricing,
+    testimonials,
+    useOptionD,
+    founderQuote,
+    productScreenshots,
+    addYourStoryEmail,
+    faq,
+    about,
+    contact,
+  } = landing;
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -134,22 +147,16 @@ export default function Home() {
         </p>
       </Section>
 
-      {/* TESTIMONIALS */}
-      <Section>
-        <Eyebrow>What sellers say</Eyebrow>
-        <H2>Real sellers, real numbers.</H2>
-        <div className="mt-10 grid gap-5 sm:grid-cols-3">
-          {testimonials.map((t) => (
-            <Card key={t.name}>
-              <p className="text-sm text-zinc-700">&ldquo;{t.quote}&rdquo;</p>
-              <p className="mt-4 text-sm font-semibold text-zinc-900">
-                {t.name}
-              </p>
-              <p className="text-xs text-zinc-500">{t.role}</p>
-            </Card>
-          ))}
-        </div>
-      </Section>
+      {/* TESTIMONIALS (VOIA-51 / PRO-98) — 2-slot grid + Add-your-story CTA.
+          ONE prop (useOptionD) toggles the Option-D fallback
+          (founder quote + 2 product screenshots). No separate rebuild. */}
+      <TestimonialsBlock
+        testimonials={testimonials}
+        addYourStoryEmail={addYourStoryEmail}
+        useOptionD={useOptionD}
+        founderQuote={founderQuote}
+        productScreenshots={productScreenshots}
+      />
 
       {/* FAQ */}
       <Section className="bg-white border-y border-zinc-200">

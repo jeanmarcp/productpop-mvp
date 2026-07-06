@@ -74,17 +74,17 @@ export async function lookupReferralCode(
   return rows[0] ?? null;
 }
 
-export async function recordAttributionTouch(
+export function recordAttributionTouch(
   code: string,
   ownerEmail: string | null
 ): Promise<void> {
   const ua = headers().get("user-agent") ?? null;
-  await query(
+  return query(
     `INSERT INTO referral_attributions
        (referral_code, owner_email, user_agent)
      VALUES ($1, $2, $3)`,
     [code.trim().toUpperCase(), ownerEmail, ua]
-  );
+  ).then(() => undefined);
 }
 
 export function setReferralCookie(code: string) {
@@ -131,6 +131,150 @@ export async function resolveAttributionForSignup(
     return null;
   }
   return match;
+}
+
+// ---------------------------------------------------------------------------
+// Influencer / creator code management
+// ---------------------------------------------------------------------------
+//
+// Per-creator codes live in `referral_codes` (existing table) with
+// `is_influencer_code=true` and `creator_name` set. We allocate a short,
+// human-readable code (e.g., "alex_creates") that creators can put in their
+// bio / link-in-bio. We avoid collision with general-user codes by checking
+// the existing `referral_codes` table before insert.
+
+const CREATOR_CODE_RE = /^[a-z0-9_]{3,32}$/;
+
+export type CreatorRecord = {
+  code: string;
+  creator_name: string;
+  owner_email: string;
+  commission_rate: number;
+  is_influencer_code: boolean;
+  created_at: string;
+};
+
+/**
+ * Normalize a human-readable creator code.
+ *   "Alex Creates!" -> "alex_creates"
+ *   "  Alex.Creates " -> "alex_creates"
+ */
+export function normalizeCreatorCode(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 32);
+}
+
+/**
+ * Create (or return) a per-creator referral code.
+ *
+ * If a code already exists for this creator_email with is_influencer_code=true,
+ * return it (idempotent). Otherwise insert a new row with the supplied
+ * human-readable code. Throws on invalid input or collision with a different
+ * existing code.
+ */
+export async function ensureCreatorCode(input: {
+  code: string;
+  creator_name: string;
+  owner_email: string;
+  commission_rate: number; // 0..100
+}): Promise<CreatorRecord> {
+  const code = normalizeCreatorCode(input.code);
+  if (!CREATOR_CODE_RE.test(code)) {
+    throw new Error(
+      "code must be 3-32 chars, lowercase letters/digits/underscore"
+    );
+  }
+  if (!input.creator_name.trim()) throw new Error("creator_name is required");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input.owner_email)) {
+    throw new Error("owner_email is invalid");
+  }
+  if (
+    !Number.isFinite(input.commission_rate) ||
+    input.commission_rate < 0 ||
+    input.commission_rate > 100
+  ) {
+    throw new Error("commission_rate must be between 0 and 100");
+  }
+  const email = input.owner_email.trim().toLowerCase();
+
+  return await withClient(async (c) => {
+    await c.query("BEGIN");
+    try {
+      // 1. If this email already has an influencer code, return it.
+      const existing = await c.query<CreatorRecord>(
+        `SELECT code, creator_name, owner_email, commission_rate::float AS commission_rate,
+                is_influencer_code, created_at::text AS created_at
+           FROM referral_codes
+          WHERE LOWER(owner_email) = $1
+            AND is_influencer_code = TRUE
+            AND disabled_at IS NULL
+          LIMIT 1`,
+        [email]
+      );
+      if (existing.rowCount && existing.rowCount > 0) {
+        await c.query("COMMIT");
+        return existing.rows[0];
+      }
+
+      // 2. Insert the new creator code. The UNIQUE(code) constraint
+      //    will reject collision with a general-user code or a different
+      //    creator. We rely on the caller to retry on a new code value.
+      const inserted = await c.query<CreatorRecord>(
+        `INSERT INTO referral_codes
+           (code, owner_email, creator_name, commission_rate, is_influencer_code)
+         VALUES ($1, $2, $3, $4, TRUE)
+         ON CONFLICT (code) DO NOTHING
+         RETURNING code, creator_name, owner_email,
+                   commission_rate::float AS commission_rate,
+                   is_influencer_code,
+                   created_at::text AS created_at`,
+        [code, email, input.creator_name.trim(), input.commission_rate]
+      );
+      if (inserted.rowCount && inserted.rowCount > 0) {
+        await c.query("COMMIT");
+        return inserted.rows[0];
+      }
+      await c.query("ROLLBACK");
+      throw new Error(
+        `code "${code}" is already taken; pick a different code`
+      );
+    } catch (err) {
+      try { await c.query("ROLLBACK"); } catch { /* ignore */ }
+      throw err;
+    }
+  });
+}
+
+export async function listCreatorCodes(): Promise<CreatorRecord[]> {
+  const { rows } = await query<CreatorRecord>(
+    `SELECT code, creator_name, owner_email, commission_rate::float AS commission_rate,
+            is_influencer_code, created_at::text AS created_at
+       FROM referral_codes
+      WHERE is_influencer_code = TRUE
+        AND disabled_at IS NULL
+      ORDER BY created_at DESC`
+  );
+  return rows;
+}
+
+export async function getCreatorCodeByCode(
+  code: string
+): Promise<CreatorRecord | null> {
+  const clean = normalizeCreatorCode(code);
+  if (!CREATOR_CODE_RE.test(clean)) return null;
+  const { rows } = await query<CreatorRecord>(
+    `SELECT code, creator_name, owner_email, commission_rate::float AS commission_rate,
+            is_influencer_code, created_at::text AS created_at
+       FROM referral_codes
+      WHERE code = $1 AND is_influencer_code = TRUE AND disabled_at IS NULL
+      LIMIT 1`,
+    [clean]
+  );
+  return rows[0] ?? null;
 }
 
 export async function recordAttributionSignup(

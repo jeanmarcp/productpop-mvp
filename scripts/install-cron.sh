@@ -77,9 +77,15 @@ enable_crontab() {
   fi
   TMP="$(mktemp)"
   crontab -l 2>/dev/null | grep -v 'productpop-check-replies' > "$TMP" || true
+  # Cron runs with a stripped PATH (/usr/bin:/bin) that lacks himalaya.
+  # Export the full user PATH (and the user bin dirs we know about) so the
+  # script can find himalaya. check-replies.sh also self-fixes its PATH as
+  # belt-and-suspenders, but exporting here means even short test commands
+  # (e.g. curl probes) work.
   cat >> "$TMP" <<EOF
 # ProductPop check-replies (PRO-97): poll jeanmarc.pedron@gmail.com every 15 min
 PAPERCLIP_API_URL=${PAPERCLIP_API_URL:-http://192.168.8.146:3100/api}
+PATH=/home/paperclip/.local/bin:/home/paperclip/.local/share/hermes-agent/venv/bin:/usr/local/bin:/usr/bin:/bin
 */15 * * * * /usr/bin/env bash $SCRIPTS_DIR/check-replies.sh >> $REPO_ROOT/.check-replies-logs/cron.out 2>> $REPO_ROOT/.check-replies-logs/cron.err
 EOF
   crontab "$TMP"

@@ -76,7 +76,7 @@ await check("POST /api/remove-bg with tiny PNG returns 200 + base64 output (or 5
 
 await check("waitlist row visible via psql SELECT", async () => {
   const out = execSync(
-    `PGPASSWORD=productpop_dev psql -h 127.0.0.1 -p 5438 -U productpop -d productpop -tAc "SELECT count(*) FROM waitlist WHERE source = 'contract-test'"`,
+    `PGPASSWORD=productpop_dev_2026 psql -h 127.0.0.1 -p 5438 -U productpop -d productpop -tAc "SELECT count(*) FROM waitlist WHERE source = 'contract-test'"`,
     { encoding: "utf8" }
   ).trim();
   assert.ok(Number(out) > 0, `no contract-test rows in waitlist, got '${out}'`);
