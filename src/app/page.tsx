@@ -7,6 +7,7 @@ import landing from "@/content/landing";
 import TryItUploader from "@/components/TryItUploader";
 import HeroCtas from "./_components/HeroCtas";
 import { TestimonialsBlock } from "@/components/TestimonialsBlock";
+import { loadTestimonials } from "@/lib/testimonials";
 import { Card, Eyebrow, H1, H2, Lead, Section } from "@/components/ui";
 
 export default function Home() {
@@ -15,15 +16,17 @@ export default function Home() {
     features,
     howItWorks,
     pricing,
-    testimonials,
-    useOptionD,
-    founderQuote,
-    productScreenshots,
+    testimonialsMode,
     addYourStoryEmail,
     faq,
     about,
     contact,
   } = landing;
+
+  // V2-D2: pull real testimonials from `assets/testimonials/` (Engineer-owned,
+  // PRO-97 poller writes there). The block renders an honest-pending state
+  // for any empty slot — no fake content.
+  const testimonials = loadTestimonials();
 
   return (
     <main className="min-h-screen bg-zinc-50 text-zinc-900">
@@ -147,15 +150,14 @@ export default function Home() {
         </p>
       </Section>
 
-      {/* TESTIMONIALS (VOIA-51 / PRO-98) — 2-slot grid + Add-your-story CTA.
-          ONE prop (useOptionD) toggles the Option-D fallback
-          (founder quote + 2 product screenshots). No separate rebuild. */}
+      {/* TESTIMONIALS (VOIA-51 / PRO-99) — 2-slot grid + honest-pending CTA.
+          ONE prop (testimonialsMode) toggles the section on/off. Real
+          testimonials auto-load from `assets/testimonials/`. Empty slots
+          stay in the honest-pending state with a per-card mailto CTA. */}
       <TestimonialsBlock
         testimonials={testimonials}
         addYourStoryEmail={addYourStoryEmail}
-        useOptionD={useOptionD}
-        founderQuote={founderQuote}
-        productScreenshots={productScreenshots}
+        testimonialsMode={testimonialsMode}
       />
 
       {/* FAQ */}

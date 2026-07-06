@@ -1,0 +1,166 @@
+[2m2026-07-06T05:30:03.314987Z[0m [31mERROR[0m [2mimap_client::tasks::tasks::authenticate[0m[2m:[0m cannot authenticate using XOAUTH2 mechanism: {\"status\":\"400\",\"schemes\":\"Bearer\",\"scope\":\"https://mail.google.com/\"}
+[2m2026-07-06T05:30:03.445843Z[0m [33m WARN[0m [2memail::imap[0m[2m:[0m authentication failed, refreshing access token and retrying…
+Error: 
+   0: [91mcannot build IMAP client[0m
+   1: [91mcannot refresh oauth access token[0m
+   2: [91mcannot refresh oauth2 access token[0m
+   3: [91mcannot refresh access token using the refresh token[0m
+
+[96mNote[0m: Run with --debug to enable logs with spantrace.
+[96mNote[0m: Run with --trace to enable verbose logs with backtrace.
+
+FATAL: himalaya cannot authenticate to jeanmarc.pedron@gmail.com.
+
+  The Gmail OAuth2 refresh token has expired or been revoked (status 400,
+  invalid_grant). Re-authorize via:
+
+    1. Run: refresh-gmail-token.sh
+       (or use scripts/refresh-gmail-token.sh from the legacy prodapp-pipeline repo)
+    2. If that fails with "invalid_grant", Jean-Marc must re-authorize Google:
+         bash /home/paperclip/scripts/gen_auth_link.py
+         (open the printed URL, paste the ?code= redirect)
+    3. Re-run this script.
+
+  Until re-authorization, no new replies will be detected.
+[2m2026-07-06T05:45:03.109263Z[0m [31mERROR[0m [2mimap_client::tasks::tasks::authenticate[0m[2m:[0m cannot authenticate using XOAUTH2 mechanism: {\"status\":\"400\",\"schemes\":\"Bearer\",\"scope\":\"https://mail.google.com/\"}
+[2m2026-07-06T05:45:03.240471Z[0m [33m WARN[0m [2memail::imap[0m[2m:[0m authentication failed, refreshing access token and retrying…
+Error: 
+   0: [91mcannot build IMAP client[0m
+   1: [91mcannot refresh oauth access token[0m
+   2: [91mcannot refresh oauth2 access token[0m
+   3: [91mcannot refresh access token using the refresh token[0m
+
+[96mNote[0m: Run with --debug to enable logs with spantrace.
+[96mNote[0m: Run with --trace to enable verbose logs with backtrace.
+
+FATAL: himalaya cannot authenticate to jeanmarc.pedron@gmail.com.
+
+  The Gmail OAuth2 refresh token has expired or been revoked (status 400,
+  invalid_grant). Re-authorize via:
+
+    1. Run: refresh-gmail-token.sh
+       (or use scripts/refresh-gmail-token.sh from the legacy prodapp-pipeline repo)
+    2. If that fails with "invalid_grant", Jean-Marc must re-authorize Google:
+         bash /home/paperclip/scripts/gen_auth_link.py
+         (open the printed URL, paste the ?code= redirect)
+    3. Re-run this script.
+
+  Until re-authorization, no new replies will be detected.
+[2m2026-07-06T06:00:18.945997Z[0m [31mERROR[0m [2mimap_client::tasks::tasks::authenticate[0m[2m:[0m cannot authenticate using XOAUTH2 mechanism: {\"status\":\"400\",\"schemes\":\"Bearer\",\"scope\":\"https://mail.google.com/\"}
+[2m2026-07-06T06:00:19.077834Z[0m [33m WARN[0m [2memail::imap[0m[2m:[0m authentication failed, refreshing access token and retrying…
+Error: 
+   0: [91mcannot build IMAP client[0m
+   1: [91mcannot refresh oauth access token[0m
+   2: [91mcannot refresh oauth2 access token[0m
+   3: [91mcannot refresh access token using the refresh token[0m
+
+[96mNote[0m: Run with --debug to enable logs with spantrace.
+[96mNote[0m: Run with --trace to enable verbose logs with backtrace.
+
+FATAL: himalaya cannot authenticate to jeanmarc.pedron@gmail.com.
+
+  The Gmail OAuth2 refresh token has expired or been revoked (status 400,
+  invalid_grant). Re-authorize via:
+
+    1. Run: refresh-gmail-token.sh
+       (or use scripts/refresh-gmail-token.sh from the legacy prodapp-pipeline repo)
+    2. If that fails with "invalid_grant", Jean-Marc must re-authorize Google:
+         bash /home/paperclip/scripts/gen_auth_link.py
+         (open the printed URL, paste the ?code= redirect)
+    3. Re-run this script.
+
+  Until re-authorization, no new replies will be detected.
+[2m2026-07-06T06:15:03.644464Z[0m [31mERROR[0m [2mimap_client::tasks::tasks::authenticate[0m[2m:[0m cannot authenticate using XOAUTH2 mechanism: {\"status\":\"400\",\"schemes\":\"Bearer\",\"scope\":\"https://mail.google.com/\"}
+[2m2026-07-06T06:15:03.912766Z[0m [33m WARN[0m [2memail::imap[0m[2m:[0m authentication failed, refreshing access token and retrying…
+Error: 
+   0: [91mcannot build IMAP client[0m
+   1: [91mcannot refresh oauth access token[0m
+   2: [91mcannot refresh oauth2 access token[0m
+   3: [91mcannot refresh access token using the refresh token[0m
+
+[96mNote[0m: Run with --debug to enable logs with spantrace.
+[96mNote[0m: Run with --trace to enable verbose logs with backtrace.
+
+FATAL: himalaya cannot authenticate to jeanmarc.pedron@gmail.com.
+
+  The Gmail OAuth2 refresh token has expired or been revoked (status 400,
+  invalid_grant). Re-authorize via:
+
+    1. Run: refresh-gmail-token.sh
+       (or use scripts/refresh-gmail-token.sh from the legacy prodapp-pipeline repo)
+    2. If that fails with "invalid_grant", Jean-Marc must re-authorize Google:
+         bash /home/paperclip/scripts/gen_auth_link.py
+         (open the printed URL, paste the ?code= redirect)
+    3. Re-run this script.
+
+  Until re-authorization, no new replies will be detected.
+[2m2026-07-06T06:30:02.736495Z[0m [31mERROR[0m [2mimap_client::tasks::tasks::authenticate[0m[2m:[0m cannot authenticate using XOAUTH2 mechanism: {\"status\":\"400\",\"schemes\":\"Bearer\",\"scope\":\"https://mail.google.com/\"}
+[2m2026-07-06T06:30:03.098825Z[0m [33m WARN[0m [2memail::imap[0m[2m:[0m authentication failed, refreshing access token and retrying…
+Error: 
+   0: [91mcannot build IMAP client[0m
+   1: [91mcannot refresh oauth access token[0m
+   2: [91mcannot refresh oauth2 access token[0m
+   3: [91mcannot refresh access token using the refresh token[0m
+
+[96mNote[0m: Run with --debug to enable logs with spantrace.
+[96mNote[0m: Run with --trace to enable verbose logs with backtrace.
+
+FATAL: himalaya cannot authenticate to jeanmarc.pedron@gmail.com.
+
+  The Gmail OAuth2 refresh token has expired or been revoked (status 400,
+  invalid_grant). Re-authorize via:
+
+    1. Run: refresh-gmail-token.sh
+       (or use scripts/refresh-gmail-token.sh from the legacy prodapp-pipeline repo)
+    2. If that fails with "invalid_grant", Jean-Marc must re-authorize Google:
+         bash /home/paperclip/scripts/gen_auth_link.py
+         (open the printed URL, paste the ?code= redirect)
+    3. Re-run this script.
+
+  -- OR -- until re-authorization, you can still test the poller end-to-end
+  by feeding it a fixture file:
+
+    bash /home/paperclip/productpop-mvp/scripts/check-replies.sh --from-fixture \
+        /home/paperclip/productpop-mvp/.check-replies-logs/smoke-envelopes.json --dry-run
+
+  This drives the full parse → write-text-file → append-responses.md →
+  spool-PRO-90-comment pipeline without touching IMAP. The .smoke.md files
+  written by --from-fixture are tagged differently from real writes so they
+  do not contaminate the production manifest.
+
+  Until re-authorization, no real new replies will be detected.
+[2m2026-07-06T06:45:02.603299Z[0m [31mERROR[0m [2mimap_client::tasks::tasks::authenticate[0m[2m:[0m cannot authenticate using XOAUTH2 mechanism: {\"status\":\"400\",\"schemes\":\"Bearer\",\"scope\":\"https://mail.google.com/\"}
+[2m2026-07-06T06:45:02.908420Z[0m [33m WARN[0m [2memail::imap[0m[2m:[0m authentication failed, refreshing access token and retrying…
+Error: 
+   0: [91mcannot build IMAP client[0m
+   1: [91mcannot refresh oauth access token[0m
+   2: [91mcannot refresh oauth2 access token[0m
+   3: [91mcannot refresh access token using the refresh token[0m
+
+[96mNote[0m: Run with --debug to enable logs with spantrace.
+[96mNote[0m: Run with --trace to enable verbose logs with backtrace.
+
+FATAL: himalaya cannot authenticate to jeanmarc.pedron@gmail.com.
+
+  The Gmail OAuth2 refresh token has expired or been revoked (status 400,
+  invalid_grant). Re-authorize via:
+
+    1. Run: refresh-gmail-token.sh
+       (or use scripts/refresh-gmail-token.sh from the legacy prodapp-pipeline repo)
+    2. If that fails with "invalid_grant", Jean-Marc must re-authorize Google:
+         bash /home/paperclip/scripts/gen_auth_link.py
+         (open the printed URL, paste the ?code= redirect)
+    3. Re-run this script.
+
+  -- OR -- until re-authorization, you can still test the poller end-to-end
+  by feeding it a fixture file:
+
+    bash /home/paperclip/productpop-mvp/scripts/check-replies.sh --from-fixture \
+        /home/paperclip/productpop-mvp/.check-replies-logs/smoke-envelopes.json --dry-run
+
+  This drives the full parse → write-text-file → append-responses.md →
+  spool-PRO-90-comment pipeline without touching IMAP. The .smoke.md files
+  written by --from-fixture are tagged differently from real writes so they
+  do not contaminate the production manifest.
+
+  Until re-authorization, no real new replies will be detected.

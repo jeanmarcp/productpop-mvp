@@ -1,19 +1,20 @@
 // UI primitives used by the landing page. Tiny — no external UI lib.
 // Kept in one file so it's obvious what's a styled atom.
 
-import { type ReactNode } from "react";
+import { type HTMLAttributes, type ReactNode } from "react";
 
 export function Section({
   id,
   className = "",
   children,
-}: {
-  id?: string;
-  className?: string;
-  children: ReactNode;
-}) {
+  ...rest
+}: { id?: string; className?: string; children: ReactNode } & HTMLAttributes<HTMLElement>) {
   return (
-    <section id={id} className={"mx-auto w-full max-w-5xl px-5 py-16 " + className}>
+    <section
+      id={id}
+      className={"mx-auto w-full max-w-5xl px-5 py-16 " + className}
+      {...rest}
+    >
       {children}
     </section>
   );
@@ -54,15 +55,14 @@ export function Lead({ children }: { children: ReactNode }) {
 export function Card({
   className = "",
   children,
-}: {
-  className?: string;
-  children: ReactNode;
-}) {
+  ...rest
+}: { className?: string; children: ReactNode } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div
       className={
         "rounded-2xl border border-zinc-200 bg-white p-6 shadow-sm " + className
       }
+      {...rest}
     >
       {children}
     </div>

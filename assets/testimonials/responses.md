@@ -78,3 +78,117 @@ This file is the single source of truth for every reply to the T1/T2/T3 founder-
   3. Engineer re-runs the smoke test, confirms a real envelope parses, then flips PRO-97 from `blocked` to `done`.
 - **No replies recorded since 2026-07-06T00:46Z.** Counts unchanged: written 0 / video 0.
 - **Next sweep:** triggered by poller (every 15 min once alive) + manual CMO heartbeat after any new reply lands.
+
+## 2026-07-06T10:00:00Z — jane — outreach reply
+
+**From:** jane@smithceramics.example
+**Subject:** Re: Quick question about Smith Ceramics on etsy
+**Body:**
+> > Hi Jean-Marc, happy to try it. Send the trial link.
+
+**Disposition:**
+- [ ] trial_only — send trial link, re-prompt +7d
+- [ ] written_testimonial — file written: `assets/testimonials/text/01-jane.md`
+- [ ] video_testimonial — save to video/{seller_id}.md
+- [ ] decline — log, no follow-up
+- [ ] later — schedule re-prompt +30d, mark sequence stopped
+- [ ] unknown_sender — flag for CMO triage
+
+**Follow-up needed by:** TBD by CMO
+**Follow-up owner:** CMO ({4495040b})
+
+
+## 2026-07-06T10:02:00Z — john — outreach reply
+
+**From:** john@doesurf.example
+**Subject:** Quick question about Doe Surf Co on shopify
+**Body:**
+> > Not interested, thanks.
+
+**Disposition:**
+- [ ] trial_only — send trial link, re-prompt +7d
+- [ ] written_testimonial — file written: `assets/testimonials/text/02-john.md`
+- [ ] video_testimonial — save to video/{seller_id}.md
+- [ ] decline — log, no follow-up
+- [ ] later — schedule re-prompt +30d, mark sequence stopped
+- [ ] unknown_sender — flag for CMO triage
+
+**Follow-up needed by:** TBD by CMO
+**Follow-up owner:** CMO ({4495040b})
+
+
+## 2026-07-06T10:03:00Z — unknown — outreach reply
+
+**From:** unknown@gmail.com
+**Subject:** One small favour for Mystery Co?
+**Body:**
+> > Sure, here's my quote: I love this product.
+
+**Disposition:**
+- [ ] trial_only — send trial link, re-prompt +7d
+- [ ] written_testimonial — file written: `assets/testimonials/text/03-unknown.md`
+- [ ] video_testimonial — save to video/{seller_id}.md
+- [ ] decline — log, no follow-up
+- [ ] later — schedule re-prompt +30d, mark sequence stopped
+- [ ] unknown_sender — flag for CMO triage
+
+**Follow-up needed by:** TBD by CMO
+**Follow-up owner:** CMO ({4495040b})
+
+
+## 2026-07-06T10:00:00Z — jane — outreach reply
+
+**From:** jane@smithceramics.example
+**Subject:** Re: Quick question about Smith Ceramics on etsy
+**Body:**
+> > Hi Jean-Marc, happy to try it. Send the trial link.
+
+**Disposition:**
+- [ ] trial_only — send trial link, re-prompt +7d
+- [ ] written_testimonial — file written: `assets/testimonials/text/01-jane.md`
+- [ ] video_testimonial — save to video/{seller_id}.md
+- [ ] decline — log, no follow-up
+- [ ] later — schedule re-prompt +30d, mark sequence stopped
+- [ ] unknown_sender — flag for CMO triage
+
+**Follow-up needed by:** TBD by CMO
+**Follow-up owner:** CMO ({4495040b})
+
+
+## 2026-07-06T10:02:00Z — john — outreach reply
+
+**From:** john@doesurf.example
+**Subject:** Quick question about Doe Surf Co on shopify
+**Body:**
+> > Not interested, thanks.
+
+**Disposition:**
+- [ ] trial_only — send trial link, re-prompt +7d
+- [ ] written_testimonial — file written: `assets/testimonials/text/02-john.md`
+- [ ] video_testimonial — save to video/{seller_id}.md
+- [ ] decline — log, no follow-up
+- [ ] later — schedule re-prompt +30d, mark sequence stopped
+- [ ] unknown_sender — flag for CMO triage
+
+**Follow-up needed by:** TBD by CMO
+**Follow-up owner:** CMO ({4495040b})
+
+
+## 2026-07-06T10:03:00Z — unknown — outreach reply
+
+**From:** unknown@gmail.com
+**Subject:** One small favour for Mystery Co?
+**Body:**
+> > Sure, here's my quote: I love this product.
+
+**Disposition:**
+- [ ] trial_only — send trial link, re-prompt +7d
+- [ ] written_testimonial — file written: `assets/testimonials/text/03-unknown.md`
+- [ ] video_testimonial — save to video/{seller_id}.md
+- [ ] decline — log, no follow-up
+- [ ] later — schedule re-prompt +30d, mark sequence stopped
+- [ ] unknown_sender — flag for CMO triage
+
+**Follow-up needed by:** TBD by CMO
+**Follow-up owner:** CMO ({4495040b})
+

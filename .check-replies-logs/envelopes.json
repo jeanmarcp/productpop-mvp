@@ -1,0 +1,6 @@
+[
+  {"id":"<smoke-a@m1>","from":"Jane Smith <jane@smithceramics.example>","subject":"Re: Quick question about Smith Ceramics on etsy","date":"2026-07-06T10:00:00Z","flags":[],"preview":"Hi Jean-Marc, happy to try it. Send the trial link."},
+  {"id":"<smoke-b@m2>","from":"random@stranger.com","subject":"buy cheap rolex","date":"2026-07-06T10:01:00Z","flags":[],"preview":"this is spam"},
+  {"id":"<smoke-c@m3>","from":"John Doe <john@doesurf.example>","subject":"Quick question about Doe Surf Co on shopify","date":"2026-07-06T10:02:00Z","flags":["Seen"],"preview":"Not interested, thanks."},
+  {"id":"<smoke-d@m4>","from":"unknown@gmail.com","subject":"One small favour for Mystery Co?","date":"2026-07-06T10:03:00Z","flags":[],"preview":"Sure, here's my quote: I love this product."}
+]

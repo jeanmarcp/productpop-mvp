@@ -18,17 +18,19 @@
 # last 2000 seen IDs across runs.
 #
 # Usage:
-#   bash scripts/check-replies.sh                  # one-shot poll
-#   bash scripts/check-replies.sh --dry-run        # show what would happen
-#   bash scripts/check-replies.sh --install-cron   # install systemd user timer (15 min)
+#   bash scripts/check-replies.sh                            # one-shot poll
+#   bash scripts/check-replies.sh --dry-run                  # show what would happen
+#   bash scripts/check-replies.sh --install-cron             # install timer (15 min)
 #   bash scripts/check-replies.sh --uninstall-cron
+#   bash scripts/check-replies.sh --from-fixture FILE.json   # bypass IMAP, feed JSON
 #
 # Exit codes:
 #   0  ok (no replies, or replies processed cleanly)
 #   2  himalaya / IMAP auth not configured (refresh token expired)
 #   3  python helper missing
-#   4  responses.md missing
+#   4  responses.md missing OR fixture file missing
 #   5  Paperclip API call failed
+#   64 bad CLI args
 
 set -euo pipefail
 
@@ -66,19 +68,29 @@ PAPERCLIP_API_URL="${PAPERCLIP_API_URL:-http://192.168.8.146:3100/api}"
 PRO_90_ID="ce94d2fb-0eac-46ac-b38b-35f7d0595882"
 
 DRY_RUN=0
-case "${1:-}" in
-  --dry-run)        DRY_RUN=1 ;;
-  --install-cron)   install_cron; exit 0 ;;
-  --uninstall-cron) uninstall_cron; exit 0 ;;
-  "")               : ;;
-  -h|--help)
-    sed -n '2,30p' "$0"; exit 0 ;;
-  *) echo "unknown arg: $1" >&2; exit 64 ;;
-esac
+FIXTURE_FILE=""
+# Parse args in a loop so flags can be in any order
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run)        DRY_RUN=1 ;;
+    --install-cron)   install_cron; exit 0 ;;
+    --uninstall-cron) uninstall_cron; exit 0 ;;
+    --from-fixture)
+      if [ -z "${2:-}" ]; then
+        echo "FATAL: --from-fixture requires a path to a himalaya envelope JSON file" >&2
+        exit 64
+      fi
+      FIXTURE_FILE="$2"
+      shift
+      ;;
+    "")               : ;;
+    -h|--help)
+      sed -n '2,32p' "$0"; exit 0 ;;
+    *) echo "unknown arg: $1" >&2; exit 64 ;;
+  esac
+  shift
+done
 
-if ! command -v himalaya >/dev/null 2>&1; then
-  echo "FATAL: himalaya not on PATH" >&2; exit 2
-fi
 if ! command -v python3 >/dev/null 2>&1; then
   echo "FATAL: python3 not on PATH" >&2; exit 3
 fi
@@ -86,9 +98,16 @@ if [ ! -f "$RESPONSES" ]; then
   echo "FATAL: $RESPONSES missing — run the PRO-90 setup first" >&2; exit 4
 fi
 
-# --- preflight: himalaya can authenticate? -----------------------------------
+# --- preflight: himalaya can authenticate? (skipped in --from-fixture mode) -
 HIMALAYA_AUTH_LOG="$LOG_DIR/himalaya-auth.log"
-if ! himalaya folder list >"$HIMALAYA_AUTH_LOG" 2>&1; then
+if [ -n "$FIXTURE_FILE" ]; then
+  echo "check-replies: --from-fixture mode; himalaya preflight skipped"
+  if [ ! -f "$FIXTURE_FILE" ]; then
+    echo "FATAL: fixture file not found: $FIXTURE_FILE" >&2; exit 4
+  fi
+elif ! command -v himalaya >/dev/null 2>&1; then
+  echo "FATAL: himalaya not on PATH" >&2; exit 2
+elif ! himalaya folder list >"$HIMALAYA_AUTH_LOG" 2>&1; then
   cat "$HIMALAYA_AUTH_LOG" >&2
   cat >&2 <<EOF
 
@@ -104,14 +123,25 @@ FATAL: himalaya cannot authenticate to jeanmarc.pedron@gmail.com.
          (open the printed URL, paste the ?code= redirect)
     3. Re-run this script.
 
-  Until re-authorization, no new replies will be detected.
+  -- OR -- until re-authorization, you can still test the poller end-to-end
+  by feeding it a fixture file:
+
+    bash $SCRIPTS_DIR/check-replies.sh --from-fixture \\
+        $REPO_ROOT/.check-replies-logs/smoke-envelopes.json --dry-run
+
+  This drives the full parse → write-text-file → append-responses.md →
+  spool-PRO-90-comment pipeline without touching IMAP. The .smoke.md files
+  written by --from-fixture are tagged differently from real writes so they
+  do not contaminate the production manifest.
+
+  Until re-authorization, no real new replies will be detected.
 EOF
   exit 2
 fi
 # Belt and suspenders: if himalaya wrote "ERROR" lines to the log even on
 # "success", treat that as auth failure too. himalaya sometimes exits 0 with
 # a useful error in stderr.
-if grep -qE "ERROR|invalid_grant|authenticate" "$HIMALAYA_AUTH_LOG" 2>/dev/null; then
+if [ -z "$FIXTURE_FILE" ] && grep -qE "ERROR|invalid_grant|authenticate" "$HIMALAYA_AUTH_LOG" 2>/dev/null; then
   if ! grep -qE "Authentication successful|logged in" "$HIMALAYA_AUTH_LOG" 2>/dev/null; then
     cat "$HIMALAYA_AUTH_LOG" >&2
     echo "FATAL: himalaya reported an auth error in its output; aborting" >&2
@@ -119,9 +149,13 @@ if grep -qE "ERROR|invalid_grant|authenticate" "$HIMALAYA_AUTH_LOG" 2>/dev/null;
   fi
 fi
 
-# --- pull last 50 envelopes from INBOX -------------------------------------
+# --- pull last 50 envelopes from INBOX (or use fixture) ---------------------
 HIMALAYA_JSON="$LOG_DIR/envelopes.json"
-if ! himalaya -o json envelope list --page-size 50 >"$HIMALAYA_JSON" 2>"$LOG_DIR/envelopes.err"; then
+if [ -n "$FIXTURE_FILE" ]; then
+  # Copy the fixture so downstream tools can still read $HIMALAYA_JSON.
+  cp -f "$FIXTURE_FILE" "$HIMALAYA_JSON"
+  echo "check-replies: loaded fixture $FIXTURE_FILE -> $HIMALAYA_JSON"
+elif ! himalaya -o json envelope list --page-size 50 >"$HIMALAYA_JSON" 2>"$LOG_DIR/envelopes.err"; then
   echo "FATAL: himalaya envelope list failed" >&2
   cat "$LOG_DIR/envelopes.err" >&2 || true
   exit 2
@@ -167,9 +201,19 @@ while IFS=$'\x1f' read -r MSG_ID SENDER SUBJECT DATE UNREAD REASON SLUG BODY; do
   QUOTED_BODY=$(printf '%s' "$BODY" | sed 's/^/> /')
   SUBJECT_ESC=$(printf '%s' "$SUBJECT" | sed 's/[&/\]/\\&/g')
 
+  # In --from-fixture mode, tag the file as a fixture so the CMO/Designer can
+  # tell at a glance that this came from a test JSON, not a real reply.
+  FIXTURE_NOTE=""
+  if [ -n "$FIXTURE_FILE" ]; then
+    FIXTURE_NOTE="
+**Source:** FIXTURE (\`$FIXTURE_FILE\`) — NOT a real seller reply.
+**Generated:** $(date -u +%Y-%m-%dT%H:%M:%SZ) by \`scripts/check-replies.sh --from-fixture\`.
+"
+  fi
+
   cat > "$TEXT_FILE" <<EOF
 # Testimonial — ${SLUG} (T1/T2/T3 reply)
-
+${FIXTURE_NOTE}
 **From:** ${SENDER}
 **Subject:** ${SUBJECT}
 **Received (UTC):** ${DATE}

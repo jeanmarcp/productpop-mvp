@@ -1,123 +1,88 @@
-// Testimonials block for V2-D2 (VOIA-51).
+// Testimonials block for V2-D2 (VOIA-51 / PRO-99).
 //
-// Design intent (from PRO-98):
+// Design intent (extending PRO-95 prior art):
 // - 2 testimonial cards side by side on desktop, stacked on mobile.
-// - "Add your story" CTA card as the third slot (mailto: jeanmarc.pedron@gmail.com).
-// - Pending placeholder copy + "Pending" badge until a real reply lands.
-//   NOT a fake name. NOT a stock photo. NOT an illustrative composite.
-// - Option D fallback: if the user/board chooses Option D (no testimonials at
-//   launch), the section collapses to a single founder quote + 2 product
-//   screenshot slots. That branch is driven by ONE prop (`useOptionD`) — the
-//   "Skip-to-screenshots" layout is the same component, just with the
-//   grid branch hidden. No separate rebuild.
+// - Each empty slot renders an honest "pending" state with a `Pending` badge
+//   and its own `Add your story` mailto CTA. We do NOT use a third CTA card.
+//   No fake testimonials. No Lorem. No "John Doe" placeholders that read like
+//   real quotes. The honest-pending card is the design.
+// - When `assets/testimonials/{text,video}/` is non-empty, real testimonials
+//   auto-populate the first N slots. The 2-slot grid is the cap.
+// - 1-slot fallback: if there is 1 real testimonial and 1 empty slot, the
+//   empty slot stays in pending-with-CTA state (not a duplicate of slot 1).
+// - One toggle, `testimonialsMode = "active" | "collapsed"`, hides the entire
+//   section. The Option-D collapse branch (no testimonials at launch).
+// - The CTA mailto opens the user's mail client with subject
+//   "ProductPop testimonial — V2-D2" and a one-line prompt in the body.
 //
-// Data shape (Testimonial.kind):
-// - "real"   : a confirmed seller reply. Shows name, business, optional avatar.
-// - "pending": no real reply yet. Shows the "Pending" badge and skeleton lines.
-//
-// AddYourStoryCard is always rendered as the third grid slot (desktop) or
-// last item (mobile stacked). It is the inbound path for future replies.
+// Data shape:
+// - `Testimonial.kind` = "written" | "video" (real) | "pending" (empty slot).
+// - "pending" is the default for any missing slot. We never write a fake
+//   quote into it; the card just shows the badge + CTA + a short honest line
+//   of copy ("We're collecting seller stories now — check back this week.").
 
 import { Card, Eyebrow, H2, Section } from "./ui";
 import { type ReactNode } from "react";
 
-export type Testimonial = {
-  /** Stable slug. Used as the React key and as the source-of-truth filename. */
-  id: string;
-  kind: "real" | "pending";
-  /** ≤240 chars. Required. */
-  quote: string;
-  /** Real seller's name. Empty string when kind === "pending". */
-  name: string;
-  /** Real business / shop / marketplace. Empty string when kind === "pending". */
-  business: string;
-  /** Optional. Real seller avatar URL. Leave empty if no real photo. */
-  avatarUrl?: string;
-};
-
-export type FounderQuote = {
-  quote: string;
-  name: string;
-  role: string;
-  avatarUrl?: string;
-};
-
-export type ProductScreenshot = {
-  /** Stable id for keying. */
-  id: string;
-  /** Caption shown under the screenshot slot. */
-  caption: string;
-  /**
-   * Image URL. May be empty in V2-D2 — the slot will render a labelled
-   * placeholder rectangle (a11y-correct) until Engineer drops the file.
-   * NEVER an illustrative composite or a stock photo.
-   */
-  imageUrl?: string;
-  alt: string;
-};
+export type Testimonial =
+  | {
+      id: string;
+      kind: "written";
+      quote: string;
+      name: string;
+      business: string;
+      avatarUrl?: string;
+    }
+  | {
+      id: string;
+      kind: "video";
+      name: string;
+      business: string;
+      videoUrl: string;
+      posterUrl?: string;
+      transcript?: string;
+    }
+  | {
+      id: string;
+      kind: "pending";
+      /** Pre-baked honest copy. Kept generic on purpose. */
+      reason?: string;
+    };
 
 export type TestimonialsBlockProps = {
-  /** Testimonials to render in the 2-slot grid. Order is preserved. */
+  /** Up to 2 testimonials. The grid caps at 2 cards. */
   testimonials: Testimonial[];
-  /** Inbound email for the "Add your story" CTA card. */
+  /** Inbound email for the per-card "Add your story" CTA. */
   addYourStoryEmail: string;
   /**
-   * Founder-quote + 2 product screenshots branch (Option D fallback).
-   * When true, the 2-slot grid is hidden and the founder block is shown
-   * instead. ONE prop. No separate rebuild.
+   * "active"    — render the 2-slot grid (default).
+   * "collapsed" — render nothing. Option-D escape hatch when the user/board
+   *               decides to ship without testimonials (2026-07-09 trigger).
    */
-  useOptionD?: boolean;
-  /** Founder quote + 2 screenshots. Required when useOptionD is true. */
-  founderQuote?: FounderQuote;
-  productScreenshots?: ProductScreenshot[];
+  testimonialsMode?: "active" | "collapsed";
 };
 
-const PENDING_BADGE = "Pending — first seller reply expected in 3–5 days";
-const MAX_QUOTE = 240;
+const MAILTO_SUBJECT = "ProductPop testimonial — V2-D2";
+const MAILTO_BODY =
+  "Tell us in 2-3 sentences what ProductPop did for your listing photos. A photo of your product helps.";
+const PENDING_REASON = "We're collecting seller stories now — check back this week.";
+const MAX_REAL = 2;
 
-function clipQuote(q: string): string {
-  if (q.length <= MAX_QUOTE) return q;
-  return q.slice(0, MAX_QUOTE - 1).trimEnd() + "…";
+function buildMailtoHref(email: string): string {
+  // encodeURIComponent handles the subject + body safely; spaces, newlines,
+  // and the em-dash all round-trip. Most mail clients treat `\n` as a line
+  // break, but per RFC 6068 the canonical form is `%0A` — encodeURIComponent
+  // already emits that, so we are spec-compliant.
+  const subject = encodeURIComponent(MAILTO_SUBJECT);
+  const body = encodeURIComponent(MAILTO_BODY);
+  return `mailto:${email}?subject=${subject}&body=${body}`;
 }
 
-function TestimonialCard({ t }: { t: Testimonial }): ReactNode {
-  if (t.kind === "real") {
-    return (
-      <Card className="flex h-full flex-col" data-testid={`testimonial-real-${t.id}`}>
-        <blockquote className="text-sm leading-relaxed text-zinc-700">
-          &ldquo;{clipQuote(t.quote)}&rdquo;
-        </blockquote>
-        <div className="mt-5 flex items-center gap-3">
-          {t.avatarUrl ? (
-            // Real seller avatar only. No initials fallback (would be fake).
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={t.avatarUrl}
-              alt={`${t.name} avatar`}
-              className="h-9 w-9 rounded-full object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="h-9 w-9 rounded-full bg-zinc-200"
-            />
-          )}
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-zinc-900">
-              {t.name}
-            </p>
-            <p className="truncate text-xs text-zinc-500">{t.business}</p>
-          </div>
-        </div>
-      </Card>
-    );
-  }
-
-  // kind === "pending"
+function PendingCard({ email, reason }: { email: string; reason?: string }): ReactNode {
   return (
     <Card
       className="flex h-full flex-col border-dashed border-zinc-300 bg-zinc-50/60"
-      data-testid={`testimonial-pending-${t.id}`}
+      data-testid="testimonial-pending-slot"
     >
       <div className="flex items-center gap-2">
         <span
@@ -127,181 +92,164 @@ function TestimonialCard({ t }: { t: Testimonial }): ReactNode {
           ⏳
         </span>
         <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800">
-          {PENDING_BADGE}
+          Pending
         </span>
       </div>
-      <blockquote className="mt-4 text-sm leading-relaxed text-zinc-700">
-        &ldquo;{clipQuote(t.quote)}&rdquo;
-      </blockquote>
-      <div className="mt-5 space-y-1.5">
-        <div className="h-3 w-40 rounded bg-zinc-200" aria-hidden="true" />
-        <div className="h-2.5 w-28 rounded bg-zinc-200" aria-hidden="true" />
-      </div>
+      <p className="mt-4 text-sm leading-relaxed text-zinc-700">
+        {reason ?? PENDING_REASON}
+      </p>
+      <div className="mt-5 flex-1" aria-hidden="true" />
+      <a
+        className="mt-5 inline-flex items-center gap-2 self-start rounded-full bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-700"
+        href={buildMailtoHref(email)}
+        data-testid="testimonial-cta-add-your-story"
+      >
+        Add your story →
+      </a>
       <p className="mt-3 text-[11px] text-zinc-500">
-        No real name on file yet. The badge is the entire point — we&apos;d
-        rather show &ldquo;pending&rdquo; than a fake one.
+        No real name on file yet. We&apos;d rather show &ldquo;pending&rdquo; than a fake one.
       </p>
     </Card>
   );
 }
 
-function AddYourStoryCard({ email }: { email: string }): ReactNode {
+function WrittenCard({ t }: { t: Extract<Testimonial, { kind: "written" }> }): ReactNode {
   return (
-    <Card
-      className="flex h-full flex-col items-start justify-between border-pink-200 bg-pink-50/50"
-      data-testid="testimonial-add-your-story"
-    >
-      <div>
-        <p className="text-xs font-semibold uppercase tracking-wider text-pink-600">
-          Add your story
-        </p>
-        <h3 className="mt-2 text-lg font-semibold text-zinc-900">
-          Selling with ProductPop? We&apos;d love to hear from you.
-        </h3>
-        <p className="mt-2 text-sm text-zinc-700">
-          One short quote, your first name, and your shop is enough. We&apos;ll
-          handle the rest.
-        </p>
+    <Card className="flex h-full flex-col" data-testid={`testimonial-real-${t.id}`}>
+      <blockquote className="text-sm leading-relaxed text-zinc-700">
+        &ldquo;{t.quote}&rdquo;
+      </blockquote>
+      <div className="mt-5 flex items-center gap-3">
+        {t.avatarUrl ? (
+          // Real seller avatar only. No initials fallback (would be fake).
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={t.avatarUrl}
+            alt={`${t.name} avatar`}
+            className="h-9 w-9 rounded-full object-cover"
+          />
+        ) : (
+          <span aria-hidden="true" className="h-9 w-9 rounded-full bg-zinc-200" />
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-zinc-900">{t.name}</p>
+          <p className="truncate text-xs text-zinc-500">{t.business}</p>
+        </div>
       </div>
-      <a
-        className="mt-5 inline-flex items-center gap-2 rounded-full bg-pink-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-pink-700"
-        href={`mailto:${email}?subject=ProductPop%20testimonial`}
-      >
-        Share your story →
-      </a>
     </Card>
   );
 }
 
-function FounderQuoteBlock({
-  founder,
-  screenshots,
-}: {
-  founder: FounderQuote;
-  screenshots: ProductScreenshot[];
-}): ReactNode {
+function VideoCard({ t }: { t: Extract<Testimonial, { kind: "video" }> }): ReactNode {
+  // A video card without a poster would render as a black box. The loader
+  // guarantees posterUrl is set when a video is shipped; if not, we fall
+  // back to a clearly-labelled placeholder so the page never looks broken.
   return (
-    <div
-      className="mt-10 grid gap-8 lg:grid-cols-5"
-      data-testid="testimonials-option-d"
+    <Card
+      className="flex h-full flex-col"
+      data-testid={`testimonial-real-video-${t.id}`}
     >
-      <Card className="lg:col-span-3">
-        <Eyebrow>From the founder</Eyebrow>
-        <blockquote className="mt-3 text-lg leading-relaxed text-zinc-800">
-          &ldquo;{founder.quote}&rdquo;
-        </blockquote>
-        <div className="mt-5 flex items-center gap-3">
-          {founder.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={founder.avatarUrl}
-              alt={`${founder.name} avatar`}
-              className="h-10 w-10 rounded-full object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="h-10 w-10 rounded-full bg-zinc-200"
-            />
-          )}
-          <div>
-            <p className="text-sm font-semibold text-zinc-900">
-              {founder.name}
-            </p>
-            <p className="text-xs text-zinc-500">{founder.role}</p>
-          </div>
-        </div>
-      </Card>
-      <div className="grid gap-5 sm:grid-cols-2 lg:col-span-2 lg:grid-cols-1">
-        {screenshots.map((s) => (
-          <figure
-            key={s.id}
-            className="overflow-hidden rounded-2xl border border-zinc-200 bg-white"
-            data-testid={`screenshot-slot-${s.id}`}
+      <div className="overflow-hidden rounded-xl bg-zinc-100">
+        {t.posterUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <video
+            className="aspect-video w-full object-cover"
+            controls
+            preload="metadata"
+            playsInline
+            poster={t.posterUrl}
+            aria-label={`${t.name} testimonial video`}
           >
-            {s.imageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={s.imageUrl}
-                alt={s.alt}
-                className="aspect-[4/3] w-full object-cover"
+            <source src={t.videoUrl} />
+            {t.transcript ? (
+              <track
+                kind="captions"
+                srcLang="en"
+                label="English"
+                default
               />
-            ) : (
-              <div
-                className="flex aspect-[4/3] w-full items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200 text-xs font-medium text-zinc-500"
-                aria-label={s.alt}
-              >
-                Screenshot slot
-              </div>
-            )}
-            <figcaption className="border-t border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-600">
-              {s.caption}
-            </figcaption>
-          </figure>
-        ))}
+            ) : null}
+            Your browser does not support embedded video.{" "}
+            <a className="underline" href={t.videoUrl}>
+              Download the file
+            </a>
+            .
+          </video>
+        ) : (
+          <div
+            className="flex aspect-video w-full items-center justify-center bg-gradient-to-br from-zinc-100 to-zinc-200 text-xs font-medium text-zinc-500"
+            aria-label="Video poster not yet available"
+          >
+            Video poster pending
+          </div>
+        )}
       </div>
-    </div>
+      <div className="mt-4 flex items-center gap-3">
+        <span aria-hidden="true" className="h-9 w-9 rounded-full bg-pink-100" />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-zinc-900">{t.name}</p>
+          <p className="truncate text-xs text-zinc-500">{t.business}</p>
+        </div>
+      </div>
+    </Card>
   );
+}
+
+function TestimonialCard({ t, email }: { t: Testimonial; email: string }): ReactNode {
+  if (t.kind === "pending") return <PendingCard email={email} reason={t.reason} />;
+  if (t.kind === "video") return <VideoCard t={t} />;
+  return <WrittenCard t={t} />;
 }
 
 /**
  * V2-D2 Testimonials block.
  *
- * Toggle behaviour: pass `useOptionD` to swap the 2-slot grid for the
- * founder-quote + screenshots branch. No CSS class juggling, no separate
- * rebuild — same component, one prop.
+ * One toggle (`testimonialsMode`) controls the entire section:
+ *   - "active"    → 2-slot grid with honest-pending fallback per slot.
+ *   - "collapsed" → render nothing (Option-D escape hatch).
  */
 export function TestimonialsBlock({
   testimonials,
   addYourStoryEmail,
-  useOptionD = false,
-  founderQuote,
-  productScreenshots = [],
+  testimonialsMode = "active",
 }: TestimonialsBlockProps): ReactNode {
-  return (
-    <Section>
-      <Eyebrow>What sellers say</Eyebrow>
-      <H2>
-        {useOptionD
-          ? "Built for sellers, not designers."
-          : "Real sellers, real numbers."}
-      </H2>
+  if (testimonialsMode === "collapsed") return null;
 
-      {useOptionD ? (
-        founderQuote ? (
-          <FounderQuoteBlock
-            founder={founderQuote}
-            screenshots={productScreenshots}
-          />
-        ) : (
-          <p className="mt-8 text-sm text-zinc-500">
-            Founder quote not configured.
-          </p>
-        )
-      ) : (
-        <>
-          <p
-            className="mt-4 max-w-2xl text-sm text-zinc-600"
-            data-testid="testimonials-pending-note"
-          >
-            Pending slots. We&apos;re collecting the first round of seller
-            replies through a short founder-network outreach — replies expected
-            in 3–5 days. We&apos;d rather show &ldquo;pending&rdquo; than a
-            fake name.
-          </p>
-          <div
-            className="mt-10 grid gap-5 sm:grid-cols-2"
-            data-testid="testimonials-grid"
-          >
-            {testimonials.slice(0, 2).map((t) => (
-              <TestimonialCard key={t.id} t={t} />
-            ))}
-            <div className="sm:col-span-2">
-              <AddYourStoryCard email={addYourStoryEmail} />
-            </div>
-          </div>
-        </>
-      )}
+  // Cap the grid at 2 cards. Real testimonials first, then fill with pending
+  // slots so a single real + 1 empty still renders two honest cards (1-slot
+  // fallback per spec).
+  const real = testimonials.filter((t) => t.kind !== "pending").slice(0, MAX_REAL);
+  const slots: Testimonial[] = [...real];
+  while (slots.length < MAX_REAL) {
+    slots.push({
+      id: `pending-${slots.length + 1}`,
+      kind: "pending",
+      reason: PENDING_REASON,
+    });
+  }
+
+  return (
+    <Section data-testid="testimonials-block">
+      <Eyebrow>What sellers say</Eyebrow>
+      <H2>Real sellers, real numbers.</H2>
+      <p
+        className="mt-4 max-w-2xl text-sm text-zinc-600"
+        data-testid="testimonials-pending-note"
+      >
+        {real.length === 0
+          ? "Pending slots. We're collecting seller stories now — check back this week."
+          : real.length === 1
+            ? "One story in. The next slot will fill as replies come in — every empty card has its own add-your-story link."
+            : "Real replies from the founder-network outreach. Pending slots still accept new stories."}
+      </p>
+      <div
+        className="mt-10 grid gap-5 sm:grid-cols-2"
+        data-testid="testimonials-grid"
+      >
+        {slots.map((t) => (
+          <TestimonialCard key={t.id} t={t} email={addYourStoryEmail} />
+        ))}
+      </div>
     </Section>
   );
 }

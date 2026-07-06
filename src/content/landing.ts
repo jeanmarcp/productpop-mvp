@@ -10,28 +10,19 @@ type LandingShape = {
   features: Feature[];
   howItWorks: { step: number; title: string; body: string }[];
   pricing: { tiers: PricingTier[]; creditPackages: { photos: number; price: string }[] };
-  testimonials: {
-    id: string;
-    kind: "real" | "pending";
-    quote: string;
-    name: string;
-    business: string;
-    avatarUrl?: string;
-  }[];
   /**
-   * When true, the Testimonials block renders the Option-D branch
-   * (founder quote + 2 product screenshots) instead of the 2-slot
-   * testimonial grid. ONE toggle. Set by the board when the outreach
-   * campaign does not land by 2026-07-09.
+   * Toggles the entire testimonials block. PRO-99 spec:
+   *   - "active"    — render the 2-slot grid (default). Real testimonials
+   *     auto-populate from `assets/testimonials/`; empty slots show the
+   *     honest-pending state with a `Pending` badge + `Add your story` CTA.
+   *   - "collapsed" — render nothing. Escape hatch when the 2026-07-09
+   *     shortlist comes back below 5 contacts and the CEO chooses the
+   *     no-testimonials launch path.
+   *
+   * Note: prior art (PRO-95) used `useOptionD` + a `founderQuote` branch.
+   * PRO-99 supersedes that with the simpler `testimonialsMode` toggle.
    */
-  useOptionD: boolean;
-  founderQuote: { quote: string; name: string; role: string; avatarUrl?: string };
-  productScreenshots: {
-    id: string;
-    caption: string;
-    imageUrl?: string;
-    alt: string;
-  }[];
+  testimonialsMode: "active" | "collapsed";
   addYourStoryEmail: string;
   faq: { q: string; a: string }[];
   about: { mission: string; story: string; promise: string };
@@ -150,47 +141,11 @@ export const landing: LandingShape = {
       { photos: 500, price: "€34.99" },
     ],
   },
-  // V2-D2 (VOIA-51 / PRO-98). Two pending slots + Add-your-story CTA.
-  // When a real seller reply lands, replace a pending entry with
-  //   { id, kind: "real", quote, name, business, avatarUrl? }.
-  // The next deploy will pick it up automatically — no manual swap.
-  testimonials: [
-    {
-      id: "01-pending-written",
-      kind: "pending",
-      quote:
-        "We&rsquo;re collecting the first round of real seller replies now. The honest version of this card is &lsquo;pending&rsquo; until a real person replies.",
-      name: "",
-      business: "",
-    },
-    {
-      id: "02-pending-written",
-      kind: "pending",
-      quote:
-        "One short quote from a real Vinted or Etsy seller, written in their own words. No marketing polish, no invented numbers — just one seller telling another what changed.",
-      name: "",
-      business: "",
-    },
-  ],
-  useOptionD: false,
-  founderQuote: {
-    quote:
-      "We built ProductPop because we wanted our own listings to look as good as the big shops — without paying a studio. The first round of seller replies will land in a few days, and we&rsquo;d rather show &lsquo;pending&rsquo; than a fake name until they do.",
-    name: "Jean-Marc Pédron",
-    role: "Founder, ProductPop",
-  },
-  productScreenshots: [
-    {
-      id: "screenshot-before-after",
-      caption: "Before / after: tap to remove the background.",
-      alt: "ProductPop before and after background removal",
-    },
-    {
-      id: "screenshot-template-picker",
-      caption: "Pick a studio template — Wood, White, Gradient, or your own.",
-      alt: "ProductPop studio template picker",
-    },
-  ],
+  // V2-D2 testimonials (VOIA-51 / PRO-99). The 2-slot grid is rendered by
+  // <TestimonialsBlock> with real data auto-loaded from `assets/testimonials/`
+  // by `lib/testimonials.ts`. Empty slots fall back to the honest-pending
+  // state. To flip the section off entirely, set `testimonialsMode: "collapsed"`.
+  testimonialsMode: "active",
   addYourStoryEmail: "jeanmarc.pedron@gmail.com",
   faq: [
     {
