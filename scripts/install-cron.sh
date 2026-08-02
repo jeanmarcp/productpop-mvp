@@ -76,7 +76,14 @@ enable_crontab() {
     exit 1
   fi
   TMP="$(mktemp)"
-  crontab -l 2>/dev/null | grep -v 'productpop-check-replies' > "$TMP" || true
+  # Remove ALL previous ProductPop check-replies blocks (4 lines each:
+  # comment + PAPERCLIP_API_URL + PATH + cron line). Use awk to drop the
+  # 4-line block when the comment marker is present.
+  crontab -l 2>/dev/null | awk '
+    /^# ProductPop check-replies/ {skip=4; next}
+    skip > 0 {skip--; next}
+    {print}
+  ' > "$TMP" || true
   # Cron runs with a stripped PATH (/usr/bin:/bin) that lacks himalaya.
   # Export the full user PATH (and the user bin dirs we know about) so the
   # script can find himalaya. check-replies.sh also self-fixes its PATH as

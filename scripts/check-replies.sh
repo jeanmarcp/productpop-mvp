@@ -69,6 +69,70 @@ PRO_90_ID="ce94d2fb-0eac-46ac-b38b-35f7d0595882"
 
 DRY_RUN=0
 FIXTURE_FILE=""
+
+# ----- cron / systemd timer utilities (defined early so callers work) -----
+install_cron() {
+  local repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+  # Prefer sd-only: user-level systemd timer + service (works in container)
+  mkdir -p "${SYSTEMD_USER_DIR}"
+
+  # Write the service file that runs the poller once
+  cat > "${SYSTEMD_USER_DIR}/${SERVICE_NAME}" <<'EOF'
+[Unit]
+Description=ProductPop Check Replies poller (himalaya IMAP)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash -c 'cd "${repo_root}" && export PATH="${HIMALAYA_PATHS}" && /usr/bin/env bash scripts/check-replies.sh 2>> "${repo_root}/.check-replies-logs/cron.err"'
+
+[Install]
+WantedBy=default.target
+EOF
+
+  # Write the timer: wake up every 15 minutes
+  cat > "${SYSTEMD_USER_DIR}/${TIMER_NAME}" <<'EOF'
+[Unit]
+Description=Run ProductPop check-replies every 15 minutes
+
+[Timer]
+OnCalendar=*:0/15
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
+EOF
+
+  # Enable and start (user instance only)
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl --user daemon-reload
+    systemctl --user enable "${TIMER_NAME}"
+    systemctl --user start "${TIMER_NAME}"
+    echo "Installed and started systemd timer '${TIMER_NAME}' (every 15 min)"
+    echo "Enable user services with: systemctl --user enable --now sifnoded"
+  else
+    echo "ERROR: systemctl not available; user-level systemd is required"
+    return 1
+  fi
+}
+
+uninstall_cron() {
+  if command -v systemctl >/dev/null 2>&1 && [ -d "${SYSTEMD_USER_DIR}" ]; then
+    if systemctl --user is-enabled "${TIMER_NAME}" 2>/dev/null | grep -q enabled; then
+      systemctl --user stop "${TIMER_NAME}" || true
+      systemctl --user disable "${TIMER_NAME}" || true
+    fi
+    rm -f "${SYSTEMD_USER_DIR}/${TIMER_NAME}"
+    rm -f "${SYSTEMD_USER_DIR}/${SERVICE_NAME}"
+    systemctl --user daemon-reload
+    echo "Uninstalled systemd timer and service."
+  else
+    echo "No systemd user timers found or systemctl unavailable."
+  fi
+}
+
 # Parse args in a loop so flags can be in any order
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -231,10 +295,18 @@ ${FIXTURE_NOTE}
 *Source: jeanmarc.pedron@gmail.com via himalaya. See PRO-97.*
 EOF
 
+  # Tag the responses.md entry as FIXTURE in --from-fixture mode so a smoke
+  # test never pollutes the CMO's single source of truth with synthetic data.
+  RESPONSES_FIXTURE_NOTE=""
+  if [ -n "$FIXTURE_FILE" ]; then
+    RESPONSES_FIXTURE_NOTE="> ⚠ **FIXTURE / smoke test** — not a real seller reply. Driven by \`$FIXTURE_FILE\` via \`check-replies.sh --from-fixture\`. CMO should ignore on triage."
+  fi
+
   # Append to responses.md (CMO reads this every heartbeat).
   cat >> "$RESPONSES" <<EOF
 
 ## ${DATE} — ${SLUG} — outreach reply
+${RESPONSES_FIXTURE_NOTE}
 
 **From:** ${SENDER}
 **Subject:** ${SUBJECT}
@@ -262,15 +334,17 @@ EOF
   # to Engineer for the wiring). If it fails, we spool the comment to
   # .check-replies-logs/pending-comments.jsonl for the CMO to pick up on
   # the next heartbeat.
+  # ALSO: a valid X-Paperclip-Run-Id is required; cron runs without it,
+  # so we skip the API call in that case and spool straight to JSONL.
   COMMENT="new reply from ${SENDER} (subject: \"${SUBJECT_ESC}\") — written file at \`${TEXT_FILE#$REPO_ROOT/}\` (msg-id ${MSG_ID})"
   SPOOL="$LOG_DIR/pending-comments.jsonl"
   POSTED=0
-  if [ -n "${PAPERCLIP_API_KEY:-}" ]; then
+  if [ -n "${PAPERCLIP_API_KEY:-}" ] && [ -n "${PAPERCLIP_RUN_ID:-}" ]; then
     body=$(jq -n --arg body "$COMMENT" '{body:$body}')
     if curl -fsS -X POST \
         "$PAPERCLIP_API_URL/issues/$PRO_90_ID/comments" \
         -H "Authorization: Bearer ${PAPERCLIP_API_KEY}" \
-        -H "X-Paperclip-Run-Id: ${PAPERCLIP_RUN_ID:-check-replies}" \
+        -H "X-Paperclip-Run-Id: ${PAPERCLIP_RUN_ID}" \
         -H "Content-Type: application/json" \
         --data-binary "$body" >/dev/null 2>>"$LOG_DIR/api.err"; then
       POSTED=1
@@ -279,7 +353,7 @@ EOF
       echo "check-replies: PRO-90 comment API call failed (authz boundary likely); spooling for CMO pickup" >&2
     fi
   else
-    echo "check-replies: PAPERCLIP_API_KEY not set, spooling comment" >&2
+    echo "check-replies: PAPERCLIP_API_KEY or PAPERCLIP_RUN_ID not set, spooling comment" >&2
   fi
   if [ "$POSTED" = "0" ]; then
     # Append a JSONL line the CMO can ingest on the next heartbeat.
@@ -302,3 +376,4 @@ EOF
 done < "$PARSED"
 
 exit 0
+# Script to poll for new CMO outreach replies to jeanmarc.pedron@gmail.com
